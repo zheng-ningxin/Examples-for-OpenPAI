@@ -11,38 +11,33 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
-import torchvision.models as models
 
-name2net={
-    'vgg19'       : models.vgg19,
-    'resnet18'    : models.resnet18,
-    'resnet50'    : models.resnet50,
-    'mobilenet'   : models.mobilenet,
-    'mobilenetv2' : models.mobilenet_v2
-}
+if not os.path.exists('pytorch-cifar'):
+    print('Please run init.sh first')    
+    sys.exit(-1)
+sys.path.append('pytorch-cifar')
+import models
+support_models=['ResNet18', 'ResNet34', 'GoogLeNet', 'MobileNet', 'MobileNetV2', 'ShuffleNetV2']
+
 
 def parse_args():
     # Training configurations 
     parser = argparse.ArgumentParser(description='Configuration for cifar training')
-    parser.add_argument('--lr', default=0.01, type=float, help='Learing Rate')
+    parser.add_argument('--lr', default=0.1, type=float, help='Learing Rate')
     parser.add_argument('--batchsize', type=int, default=128, help='Batchsize for training')
     parser.add_argument('--epoch', type=int, default=200, help='The number of epochs')
     parser.add_argument('--momentum', type=float, default=0.9, help='Momentum value for optimizer')
-    parser.add_argument('--weight_decay', type=float, default=4e-5, help='Weight decay for the optimizer')
+    parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight decay for the optimizer')
     
     parser.add_argument('--cpu', default=False, action='store_true', help='Only use CPU to train')
     parser.add_argument('--gpuid', default='0', type=str, help='Gpus used for training')
-    parser.add_argument('--arch', choices=list(name2net.keys()), default='vgg19', help='Network type used for training')
-    parser.add_argument('--training', action='store_true', default=True, help='Train the model')
-    parser.add_argument('--inference', action='store_true', default=False, help='Use the pretrained model to inference')
+    parser.add_argument('--arch', choices=support_models, default='ResNet18', help='Network type used for training')
     return parser.parse_args()
 
 
 def build_net(args):
-    if args.training:
-        net = name2net[args.arch](pretrained=False)
-    else: 
-        net = name2net[args.arch](pretrained=True)
+    print('Build network')
+    net = models.__dict__[args.arch]()
     if args.cpu:
         # Use CPU to run the model
         args.gpu = False
@@ -69,6 +64,7 @@ def train_epoch(net, train_loader, optimizer, args):
         optimizer.zero_grad()
         output = net(data)
         loss = F.cross_entropy(output, target)
+        # print(bid,'  ',loss.item())
         loss.backward()
         optimizer.step()
         
@@ -96,6 +92,7 @@ def validate(net, data_loader, args):
             correct += predict.eq(target).sum().item()
         print('Loss: %.2f  Accuracy: %2f' % (loss_sum/len(data_loader), correct/count))
 
+
 def prepare_data(args):
     print('==> Preparing Data...')
     cifar_transform_train = transforms.Compose([
@@ -115,24 +112,18 @@ def prepare_data(args):
     return train_loader, val_loader
 
 
-
-def main(args):
+def train(args):
     train_loader, val_loader = prepare_data(args)
     net = build_net(args)
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    if args.training:
-        for epochid in range(args.epoch):
-            print("==> Training Epoch %d" % epochid)
-            train_epoch(net, train_loader, optimizer, args)
-            print('==> Validating ')
-            validate(net, val_loader, args)
-    else:
-        print('==>Validating')
+    for epochid in range(args.epoch):
+        print("==> Training Epoch %d" % epochid)
+        train_epoch(net, train_loader, optimizer, args)
+        print('==> Validating ')
         validate(net, val_loader, args)
-
     
 
 if __name__ == '__main__':
     args = parse_args()
     os.environ['CUDA_VISIBLE_DEVICES'] = args.gpuid
-    main(args)
+    train(args)
