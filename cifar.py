@@ -3,7 +3,6 @@ import os
 import re
 import sys
 import argparse
-import tqdm
 import torch 
 import torch.cuda as cuda
 import torch.nn as nn
@@ -25,8 +24,8 @@ name2net={
 def parse_args():
     # Training configurations 
     parser = argparse.ArgumentParser(description='Configuration for cifar training')
-    parser.add_argument('--lr', default=0.1, type=float, help='Learing Rate')
-    parser.add_argument('--batchsize', type=int, default=256, help='Batchsize for training')
+    parser.add_argument('--lr', default=0.01, type=float, help='Learing Rate')
+    parser.add_argument('--batchsize', type=int, default=128, help='Batchsize for training')
     parser.add_argument('--epoch', type=int, default=200, help='The number of epochs')
     parser.add_argument('--momentum', type=float, default=0.9, help='Momentum value for optimizer')
     parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight decay for the optimizer')
@@ -67,8 +66,8 @@ def train_epoch(net, train_loader, optimizer, args):
     for bid, (data, target) in enumerate(train_loader):
         if args.gpu:
             data, target = data.cuda(), target.cuda()
-        output = net(data)
         optimizer.zero_grad()
+        output = net(data)
         loss = F.cross_entropy(output, target)
         loss.backward()
         optimizer.step()
