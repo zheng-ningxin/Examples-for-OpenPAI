@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--batchsize', type=int, default=128, help='Batchsize for training')
     parser.add_argument('--epoch', type=int, default=200, help='The number of epochs')
     parser.add_argument('--momentum', type=float, default=0.9, help='Momentum value for optimizer')
-    parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight decay for the optimizer')
+    parser.add_argument('--weight_decay', type=float, default=4e-5, help='Weight decay for the optimizer')
     
     parser.add_argument('--cpu', default=False, action='store_true', help='Only use CPU to train')
     parser.add_argument('--gpuid', default='0', type=str, help='Gpus used for training')
@@ -110,8 +110,8 @@ def prepare_data(args):
     ])
     train_set = torchvision.datasets.CIFAR10(root='./data', transform=cifar_transform_train, train=True, download=True)
     val_set = torchvision.datasets.CIFAR10(root='./data', transform=cifar_transform_val, train=False)
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, shuffle=True)
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batchsize, shuffle=False)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, shuffle=True, num_workers=4)
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batchsize, shuffle=False, num_workers=4)
     return train_loader, val_loader
 
 
