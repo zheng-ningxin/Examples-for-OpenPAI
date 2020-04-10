@@ -11,7 +11,7 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
-import horovod.pytorch as hvd
+import horovod.torch as hvd
 if not os.path.exists('pytorch-cifar'):
     print('Please run init.sh first')    
     sys.exit(-1)
@@ -27,7 +27,7 @@ def parse_args():
     parser.add_argument('--epoch', type=int, default=200, help='The number of epochs')
     parser.add_argument('--momentum', type=float, default=0.9, help='Momentum value for optimizer')
     parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight decay for the optimizer')
-    #parser.add_argument('--lr_decay', choices=[None, 'cos', 'stage', 'step'], default=None, help='Learing rate decay')
+    # parser.add_argument('--lr_decay', choices=[None, 'cos', 'stage', 'step'], default=None, help='Learing rate decay')
     # Horovod configurations
     parser.add_argument('--seed', type=int, default=0, help='Random seed for pytorch.')
     parser.add_argument('--num_threads_per', type=int, default=1, help='Number of threads for each worker.')
@@ -44,8 +44,7 @@ def train_epoch(net, train_loader, optimizer, args):
     count = 0
     correct = 0
     for bid, (data, target) in enumerate(train_loader):
-        if args.gpu:
-            data, target = data.cuda(), target.cuda()
+        data, target = data.cuda(), target.cuda()
         optimizer.zero_grad()
         output = net(data)
         loss = F.cross_entropy(output, target)
@@ -67,8 +66,7 @@ def validate(net, data_loader, args):
     count = 0
     with torch.no_grad():
         for bid, (data, target) in enumerate(data_loader):
-            if args.gpu:
-                data, target = data.cuda(), target.cuda()
+            data, target = data.cuda(), target.cuda()
             output = net(data)
             loss = F.cross_entropy(output, target)
             _, predict = output.max(1)
@@ -95,8 +93,8 @@ def prepare_data(args):
     val_set = torchvision.datasets.CIFAR10(root='./data', transform=cifar_transform_val, train=False, download=True)
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_set, num_replicas=hvd.size(), rank=hvd.rank())
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_set, num_replicas=hvd.size(), rank=hvd.rank())
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, sampler=train_sampler, shuffle=True, num_workers=4)
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batchsize, sampler=val_sampler, shuffle=False, num_workers=4)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, sampler=train_sampler, num_workers=4)
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batchsize, sampler=val_sampler, num_workers=4)
     return train_loader, val_loader
 
 
@@ -133,7 +131,6 @@ def train(args):
 
 if __name__ == '__main__':
     args = parse_args()
-    os.environ['CUDA_VISIBLE_DEVICES'] = args.gpuid
     hvd.init()
     torch.manual_seed(args.seed)
     torch.cuda.set_device(hvd.local_rank())
