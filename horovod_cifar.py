@@ -89,8 +89,10 @@ def prepare_data(args):
         transforms.ToTensor(),
         transforms.Normalize((0.4914, 0.4822, 0.4465), (0.2023, 0.1994, 0.2010))
     ])
-    train_set = torchvision.datasets.CIFAR10(root='./data', transform=cifar_transform_train, train=True, download=True)
-    val_set = torchvision.datasets.CIFAR10(root='./data', transform=cifar_transform_val, train=False, download=True)
+    # data-%d is used to avoid data corruption due data contention
+    # or you can only put the data downloading part before the hvd.init
+    train_set = torchvision.datasets.CIFAR10(root='./data-%d' % hvd.rank(), transform=cifar_transform_train, train=True, download=True)
+    val_set = torchvision.datasets.CIFAR10(root='./data-%d' % hvd.rank(), transform=cifar_transform_val, train=False, download=False)
     train_sampler = torch.utils.data.distributed.DistributedSampler(train_set, num_replicas=hvd.size(), rank=hvd.rank())
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_set, num_replicas=hvd.size(), rank=hvd.rank())
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, sampler=train_sampler, num_workers=4)
@@ -101,13 +103,12 @@ def prepare_data(args):
 def train(args):
     train_loader, val_loader = prepare_data(args)
     assert(cuda.is_available() and cuda.device_count() > 0)
-        
     net = models.__dict__[args.arch]()
     net = net.cuda()
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
     optimizer = hvd.DistributedOptimizer(optimizer, named_parameters=net.named_parameters())
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(args.epoch*0.5), int(args.epoch*0.75)], gamma=0.1)
-    
+
     hvd.broadcast_parameters(net.state_dict(), root_rank=0)
     best_acc = 0
     checkpoint = {}
