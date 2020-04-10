@@ -1,0 +1,44 @@
+protocolVersion: 2
+name: nizhen_c0bd0115
+type: job
+jobRetryCount: 0
+prerequisites:
+  - type: dockerimage
+    uri: openpai/pytorch-py36-cu90
+    name: docker_image_0
+taskRoles:
+  taskrole:
+    instances: 1
+    completion:
+      minFailedInstances: 1
+      minSucceededInstances: -1
+    taskRetryCount: 0
+    dockerImage: docker_image_0
+    resourcePerInstance:
+      gpu: 1
+      cpu: 3
+      memoryMB: 8192
+    commands:
+      - apt update
+      - apt install -y wget unzip
+      - 'git clone https://github.com/zheng-ningxin/Examples-for-OpenPAI.git'
+      - cd Examples-for-OpenPAI
+      - bash init.sh
+      - python cifar.py --gpuid 0 --arch ResNet18 --epoch 200
+defaults:
+  virtualCluster: default
+extras:
+  com.microsoft.pai.runtimeplugin:
+    - plugin: ssh
+      parameters:
+        jobssh: true
+        userssh:
+          type: custom
+          value: >-
+            ssh-rsa
+            AAAAB3NzaC1yc2EAAAADAQABAAABgQDwl1DLNdvqlqHP984IafKKF76UP37UAk6CTsrXNvcA9/AEAt8cXAwW61RdMtH0YoSqxvpmCI92j3r+Pcnu5HpHT+7JoNWsYHEyQ62ivzXSRcBQUBJ8Pa3L1j89aqJfswf2pBpmcHlSLSY/rYoxbIGEfJTokzFzGVsPhjER2QgegAcoY61T52lmIMzKLZGbDGZNQx1n2BFVYXyfFJodkxBSGZLKVLxzAHmGOLK6cxvZ9zTlwWcTc0c152OmmB8RCMUuqMC0Ay4C+LqlgjcTNl8XafcVP3pEL4tC6ghoom4lNr4BbCcgIMkpfgFzk+B6/eaROPTSjBhCTzH3ndNJlZX4pg4GObLKpe6p0PEHneEXDx/leejwATiUdovQ60SPNXwu42+7qPEYfLQbgBoF90WOljelhm+/7cBhOQ8/s/E1/likI8fErgcU/amIfLL6HNh7xjKtDkNLkd5oWiE8eaB6h+Q6kI10PkZSwd7VYhTcZKOpuEiG6wKUnaB1tyhqvWU=
+            nizhen@MININT-6464O3S
+    - plugin: teamwise_storage
+      parameters:
+        storageConfigNames:
+          - configblob
