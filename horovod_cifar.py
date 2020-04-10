@@ -30,12 +30,18 @@ def parse_args():
     # parser.add_argument('--lr_decay', choices=[None, 'cos', 'stage', 'step'], default=None, help='Learing rate decay')
     # Horovod configurations
     parser.add_argument('--seed', type=int, default=0, help='Random seed for pytorch.')
-    parser.add_argument('--num_threads_per', type=int, default=1, help='Number of threads for each worker.')
+    parser.add_argument('--num_threads_per', type=int, default=4, help='Number of threads for each worker.')
     # parser.add_argument('--use-adasum', action='store_true', default=False, help='use adasum algorithm to do reduction')
     # Other configurations
     parser.add_argument('--arch', choices=support_models, default='ResNet18', help='Network type used for training')
     parser.add_argument('--outdir', type=str, default='./log', help='Outdir of results')
     return parser.parse_args()
+
+
+def metric_average(val, name):
+    tensor = torch.tensor(val)
+    avg_tensor = hvd.allreduce(tensor, name=name)
+    return avg_tensor.item()
 
 
 def train_epoch(net, train_loader, optimizer, args):
@@ -73,8 +79,14 @@ def validate(net, data_loader, args):
             loss_sum += loss.item()
             count += target.size(0)
             correct += predict.eq(target).sum().item()
-        print('Loss: %.3f  Accuracy: %.3f' % (loss_sum/len(data_loader), correct/count))
-    return correct/count
+        
+        val_acc = correct / correct
+        val_acc = metric_average(val_acc, 'avg_acc')
+        val_loss = loss_sum / len(data_loader)
+        val_loss = metric_average(val_loss, 'avg_loss')
+        if hvd.rank() == 0:
+            print('Loss: %.3f  Accuracy: %.3f' % (val_loss, val_acc))
+    return val_acc
 
 
 def prepare_data(args):
@@ -97,11 +109,11 @@ def prepare_data(args):
     val_sampler = torch.utils.data.distributed.DistributedSampler(val_set, num_replicas=hvd.size(), rank=hvd.rank())
     train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, sampler=train_sampler, num_workers=4)
     val_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batchsize, sampler=val_sampler, num_workers=4)
-    return train_loader, val_loader
+    return train_loader, val_loader, train_sampler, val_sampler
 
 
 def train(args):
-    train_loader, val_loader = prepare_data(args)
+    train_loader, val_loader, train_sampler, _ = prepare_data(args)
     assert(cuda.is_available() and cuda.device_count() > 0)
     net = models.__dict__[args.arch]()
     net = net.cuda()
@@ -110,9 +122,13 @@ def train(args):
     lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(args.epoch*0.5), int(args.epoch*0.75)], gamma=0.1)
 
     hvd.broadcast_parameters(net.state_dict(), root_rank=0)
+    hvd.broadcast_optimizer_state(optimizer, root_rank=0)
+
     best_acc = 0
     checkpoint = {}
     for epochid in range(args.epoch):
+        # Horovod: set epoch to sampler for shuffling.
+        train_sampler.set_epoch(epochid)
         print("==> Training Epoch %d, Learning Rate %.4f" % (epochid, lr_scheduler.get_lr()[0]))
         train_epoch(net, train_loader, optimizer, args)
         print('==> Validating ')
