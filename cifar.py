@@ -130,11 +130,13 @@ def train(args):
         lr_scheduler.step()
         if acc > best_acc:
             best_acc = acc
-            if len(args.gpus) > 1:
-                checkpoint = net.module.state_dict()
-            else:
+            if args.cpu or len(args.gpus)==1:
+                # Use cpu or one single gpu to train the model
                 checkpoint = net.state_dict()
-    fname = args.arch + '.pth.tar'
+            elif len(args.gpus) > 1:
+                checkpoint = net.module.state_dict()
+                
+    fname = args.arch + '_' + str(best_acc) + '.pth.tar'
     os.makedirs(args.outdir, exist_ok=True)
     fname = os.path.join(args.outdir, fname)
     torch.save(checkpoint, fname)
