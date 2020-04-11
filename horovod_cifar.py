@@ -54,7 +54,6 @@ def train_epoch(net, train_loader, optimizer, args):
         optimizer.zero_grad()
         output = net(data)
         loss = F.cross_entropy(output, target)
-        # print(bid,'  ',loss.item())
         loss.backward()
         optimizer.step()
         
@@ -80,7 +79,7 @@ def validate(net, data_loader, args):
             count += target.size(0)
             correct += predict.eq(target).sum().item()
         
-        val_acc = correct / correct
+        val_acc = correct / count
         val_acc = metric_average(val_acc, 'avg_acc')
         val_loss = loss_sum / len(data_loader)
         val_loss = metric_average(val_loss, 'avg_loss')
