@@ -3,8 +3,8 @@ This project provides the examples to run on the [OpenPAI](https://github.com/mi
 
 | Network | Hardware | Time |GPU & CPU Utilization | Accuracy (Avg of 3 runs) | Yaml Example|
 | :----:| :----: | :----: | :----: | :----: | :----: |
-| Resnet18 | V100 * 1 | 59m(200 epoch) | [Details](jpgs/Resnet18_1gpu.jpg) | 95.2% | [ResNet18_1gpu.yaml](yaml/Resnet18_1gpu.yaml) |
-| Resnet18 | V100 * 4 | 30m(200 epoch) | [Details](jpgs/Resnet18_4gpus.jpg) | 94.9% | [ResNet18_4gpu.yaml](yaml/Resnet18_4gpu.yaml) |
-| Resnet18 | CPU  * 12| 
-| Resnet18 | V100 * 4(Horovod) |
+| Resnet18 | V100 * 1 | 59m(200 epoch) | [Details](jpgs/Resnet18_1gpu.jpg) | 95.2% | [Resnet18_1gpu.yaml](yaml/Resnet18_1gpu.yaml) |
+| Resnet18 | V100 * 4 | 30m(200 epoch) | [Details](jpgs/Resnet18_4gpus.jpg) | 94.9% | [Resnet18_4gpu.yaml](yaml/Resnet18_4gpu.yaml) |
+| Resnet18 | CPU  * 12| 21h 33m(200 epoch) | [Details](jpgs/Resnet18_12cpu.jpg) | 95.15% | [Resnet18_12cpu.yaml](yaml/Resnet18_12cpu.yaml)
+| Resnet18 | V100 * 4(Horovod) | 23m(200 epoch) | [Details](jpgs/Resnet18_horovod.jpg) | 93.6% | [Restnet18_horovod.yaml](yaml/Resnet18_horovod.yaml)
 
