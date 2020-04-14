@@ -1,5 +1,5 @@
 protocolVersion: 2
-name: nizhen_acc46715
+name: Resnet18_12cpu
 type: job
 jobRetryCount: 0
 prerequisites:
@@ -32,10 +32,3 @@ extras:
     - plugin: ssh
       parameters:
         jobssh: true
-        userssh:
-          type: custom
-          value: >-
-            apt update apt install -y wget unzip git clone
-            https://github.com/zheng-ningxin/Examples-for-OpenPAI.git cd
-            Examples-for-OpenPAI bash init.sh python cifar.py --cpu --arch
-            ResNet18 --epoch 200
