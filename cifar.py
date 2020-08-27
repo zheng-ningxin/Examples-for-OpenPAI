@@ -11,7 +11,7 @@ import torch.optim as optim
 import torch.backends.cudnn as cudnn
 import torchvision
 import torchvision.transforms as transforms
-
+from torch.optim.lr_scheduler import MultiStepLR, CosineAnnealingLR, StepLR
 if not os.path.exists('pytorch-cifar'):
     print('Please run init.sh first')    
     sys.exit(-1)
@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--epoch', type=int, default=200, help='The number of epochs')
     parser.add_argument('--momentum', type=float, default=0.9, help='Momentum value for optimizer')
     parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight decay for the optimizer')
-    #parser.add_argument('--lr_decay', choices=[None, 'cos', 'stage', 'step'], default=None, help='Learing rate decay')
+    parser.add_argument('--lr_decay', choices=[None, 'cos', 'stage', 'step'], default=None, help='Learing rate decay')
 
     parser.add_argument('--cpu', default=False, action='store_true', help='Only use CPU to train')
     parser.add_argument('--gpuid', default='0', type=str, help='Gpus used for training')
@@ -119,7 +119,12 @@ def train(args):
     train_loader, val_loader = prepare_data(args)
     net = build_net(args)
     optimizer = optim.SGD(net.parameters(), lr=args.lr, momentum=args.momentum, weight_decay=args.weight_decay)
-    lr_scheduler = optim.lr_scheduler.MultiStepLR(optimizer, milestones=[int(args.epoch*0.5), int(args.epoch*0.75)], gamma=0.1)
+    if args.lr_decay == 'multistep':
+        lr_scheduler = MultiStepLR(optimizer, milestones=[int(args.epoch*0.5), int(args.epoch*0.75)], gamma=0.1)
+    elif args.lr_decay == 'cos':
+        lr_scheduler = CosineAnnealingLR(optimizer, T_max=args.epoch)
+    elif args.lr_decay == 'step':
+        lr_scheduler = StepLR(optimizer, step_size=50, gamma=0.1)
     best_acc = 0
     checkpoint = {}
     for epochid in range(args.epoch):
