@@ -28,7 +28,7 @@ def parse_args():
     parser.add_argument('--epoch', type=int, default=200, help='The number of epochs')
     parser.add_argument('--momentum', type=float, default=0.9, help='Momentum value for optimizer')
     parser.add_argument('--weight_decay', type=float, default=5e-4, help='Weight decay for the optimizer')
-    parser.add_argument('--lr_decay', choices=[None, 'cos', 'stage', 'step'], default=None, help='Learing rate decay')
+    parser.add_argument('--lr_decay', choices=[None, 'cos', 'multistep', 'step'], default=None, help='Learing rate decay')
 
     parser.add_argument('--cpu', default=False, action='store_true', help='Only use CPU to train')
     parser.add_argument('--gpuid', default='0', type=str, help='Gpus used for training')
