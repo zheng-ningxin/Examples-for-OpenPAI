@@ -110,8 +110,8 @@ def prepare_data(args):
     ])
     train_set = torchvision.datasets.CIFAR10(root='./data', transform=cifar_transform_train, train=True, download=True)
     val_set = torchvision.datasets.CIFAR10(root='./data', transform=cifar_transform_val, train=False, download=True)
-    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, shuffle=True, num_workers=4)
-    val_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batchsize, shuffle=False, num_workers=4)
+    train_loader = torch.utils.data.DataLoader(train_set, batch_size=args.batchsize, shuffle=True, num_workers=16)
+    val_loader = torch.utils.data.DataLoader(val_set, batch_size=args.batchsize, shuffle=False, num_workers=16)
     return train_loader, val_loader
 
 
